@@ -1,32 +1,40 @@
-#' Merge / reassign entities or labels to broader groups
-#' @param df   Data frame with at least columns `word` and `label`.
-#' @param maps Named list: names = target labels, values = character vectors of aliases/patterns.
-#' @param along One of c("label","word"). See above.
-#' @param regex Logical; if TRUE, aliases are treated as regex patterns.
-#' @param case_insensitive Logical; if TRUE, matching ignores case.
-#' @param out_col Name of the output column to write (default "new_label"). Will not overwrite `label` unless you set out_col = "label".
-#' @param conflict How to resolve multiple matches per row: "last_wins" (default) or "first_wins".
-#' @return Data frame with an added/overwritten column `out_col`.
+#' Harmonizes inconsistent labels or entities by mapping aliases to a target value.
+#' Useful for cleaning up country names (e.g., mapping "Belgium", "Luxembourg", "Netherlands" -> "Benelux")
+#' or grouping entities into broader categories.
+#'
+#' @param df Data frame containing at least the column specified in `along`.
+#' @param maps A named list where names are the target labels and values are character vectors 
+#'        of aliases or patterns to match (e.g., `list("Benelux" = c("Belgium", "Luxembourg", "Netherlands"))`).
+#' @param along Name of the column to search for matches (e.g., "label", "word", "clean_label"). Default: "label".
+#' @param regex Logical; if TRUE, aliases in `maps` are treated as regular expressions.
+#' @param case_insensitive Logical; if TRUE, matching ignores case differences.
+#' @param out_col Name of the output column to store the harmonized labels. Default: "new_label". If set to the same name as an existing column, it will be overwritten.
+#' @param conflict Strategy to resolve multiple matches per row: 
+#'        "last_wins" (the last match in `maps` overwrites previous ones) or 
+#'        "first_wins" (the first match is kept).
+#' 
+#' @return A data frame with the added or updated column `out_col`. 
+#'         Values not matched in `maps` retain their original value from the `label` column 
+#'         (or `along` column if used as fallback).
+#' 
 #' @import dplyr tidyr lubridate rlang stringr
 #' @importFrom stats setNames
 #' @export
 harmonize_data <- function(df,
                            maps = list(),
-                           along = c("label","word"),
+                           along = "label",
                            regex = FALSE,
                            case_insensitive = TRUE,
                            out_col = "new_label",
                            conflict = c("last_wins","first_wins")) {
   
   # Validation
-  along <- match.arg(along)
   conflict <- match.arg(conflict)
-  stopifnot(all(c("word","label") %in% names(df)))
-  if (!length(maps)) { df[[out_col]] <- df$label; return(df) }
+  if (!along %in% names(df)) stop(sprintf("Column '%s' specified in 'along' not found in data frame.", along))
   
-  df[[out_col]] <- df$label
-  target_vec <- if (along == "label") df$label else df$word
-  
+  df[[out_col]] <- target_vec <- df[[along]]
+  if (!length(maps)) { return(df) }
+    
   already_set <- rep(FALSE, nrow(df))
   
   if (!regex) {
@@ -42,6 +50,7 @@ harmonize_data <- function(df,
     
     lookup <- setNames(all_targets, all_aliases)
     if (conflict == "first_wins") {
+      # Remove duplicates from lookup, keeping the first occurrence
       keep <- !duplicated(all_aliases)
       lookup <- setNames(all_targets[keep], all_aliases[keep])
     }
@@ -49,7 +58,7 @@ harmonize_data <- function(df,
     hit <- match(target_vec_fold, names(lookup), nomatch = 0L)
     if (any(hit > 0L)) {
       idx <- which(hit > 0L)
-      if (conflict == "first_wins") idx <- idx[!already_set[idx]]
+      if (conflict == "first_wins") idx <- idx[!already_set[idx]] # Only overwrite if not already set
       df[[out_col]][idx] <- lookup[ hit[idx] ]
       already_set[idx] <- TRUE
     }

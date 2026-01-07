@@ -92,7 +92,8 @@ top_actors <- top_items_per_period(
   item = "word",                 # We want to find specific entities (e.g., "Bart De Wever")
   label_of_interest = "Benelux", # Only look at entities classified as "Belgium", "Netherlands" or "Luxembourg
   k = 5,                         # Top 5 per month
-  unit = "month"
+  unit = "month",
+  label_col = "clean_label"
 )
 
 head(top_actors)

@@ -30,7 +30,7 @@ harmonize_data <- function(df,
   
   # Validation
   conflict <- match.arg(conflict)
-  if (!along %in% names(df)) stop(sprintf("Column '%s' specified in 'along' not found in data frame.", along))
+  validate_columns(df, required = along)
   
   df[[out_col]] <- target_vec <- df[[along]]
   if (!length(maps)) { return(df) }

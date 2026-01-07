@@ -89,8 +89,8 @@ Who drove the coverage during a specific crisis?
 ```r
 top_actors <- top_items_per_period(
   clean_data,
-  item = "word",                 # We want to find specific entities (e.g., "Merkel")
-  label_of_interest = "Benelux", # Only look at entities classified as 'EU'
+  item = "word",                 # We want to find specific entities (e.g., "Bart De Wever")
+  label_of_interest = "Benelux", # Only look at entities classified as "Belgium", "Netherlands" or "Luxembourg
   k = 5,                         # Top 5 per month
   unit = "month"
 )

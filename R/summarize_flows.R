@@ -84,3 +84,53 @@ summarize_flows <- function(df,
     return(out)
   }
 
+ # ===== margin == "docs" =====
+  # Counts per Article × Lable
+  counts <- df |>
+    dplyr::group_by(!!id_sym, !!lab_sym) |>
+    dplyr::summarise(n = dplyr::n(), .groups = "drop")
+  
+  totals <- counts |>
+    dplyr::group_by(!!id_sym) |>
+    dplyr::summarise(total = sum(n, na.rm = TRUE), .groups = "drop")
+  
+  targ_counts <- counts |>
+    dplyr::filter(!!lab_sym %in% targets)
+  
+  shares <- dplyr::left_join(targ_counts, totals, by = rlang::as_string(id_sym)) |>
+    dplyr::mutate(share = ifelse(total > 0, n / total, NA_real_)) |>
+    dplyr::left_join(art_dates, by = rlang::as_string(id_sym))
+  
+  # Article per period
+  n_articles <- dplyr::distinct(art_dates, .period, !!id_sym) |>
+    dplyr::count(.period, name = "nArticles")
+  
+  hits_long <- shares |>
+    dplyr::mutate(hit = share >= doc_threshold) |>
+    dplyr::group_by(.period, !!lab_sym) |>
+    dplyr::summarise(value = sum(hit, na.rm = TRUE), .groups = "drop")
+  
+  wide_hits <- tidyr::pivot_wider(
+    hits_long,
+    names_from  = !!lab_sym,
+    values_from = value,
+    values_fill = 0,
+    names_prefix = "n"
+  )
+  
+  out <- dplyr::left_join(n_articles, wide_hits, by = ".period") |>
+    dplyr::rename(date = .period)
+  
+  n_cols <- grep("^n(?!Articles$)", names(out), perl = TRUE, value = TRUE)
+  for (nc in n_cols) {
+    out[[sub("^n", "share", nc)]] <- ifelse(out$nArticles > 0,
+                                            out[[nc]] / out$nArticles,
+                                            NA_real_)
+  }
+  
+  if (melt) {
+    out <- tidyr::pivot_longer(out, cols = -c(date, nArticles),
+                               names_to = "target", values_to = "value")
+  }
+  as_tibble(out)
+}

@@ -31,7 +31,7 @@ Here is a typical workflow: analyzing the shift in foreign news attention in a d
 
 ### 1. Load Data & Harmonize Labels
 
-First, clean up the raw output from NEClass. Map different spellings or sub-regions to a common label.
+First, clean up the raw output from NEClass. Map different labels to broader categories if desired.
 
 ```r
 library(NeclassFlows)
@@ -51,8 +51,7 @@ clean_data <- harmonize_data(
   data, 
   maps = mappings, 
   along = "label", 
-  out_col = "clean_label",
-  conflict = "last_wins"
+  out_col = "clean_label"
 )
 
 ```
@@ -65,11 +64,10 @@ Calculate the monthly share of attention for specific target countries.
 # Calculate monthly visibility of USA and EU
 flows <- summarize_flows(
   clean_data,
-  targets = c("Maghreb", "Benelux"),
+  margin = "entities",               # Calculate share based on total entities
+  targets = c("Maghreb", "Benelux"), # only consider entities with specific labels
   label_col = "clean_label",
-  date_col = "date",
-  date_unit = "month",
-  margin = "entities" # Calculate share based on total entities
+  date_unit = "month"
 )
 
 # Visualize with ggplot2
@@ -78,13 +76,13 @@ library(ggplot2)
 ggplot(flows, aes(x = date, y = share, color = clean_label)) +
   geom_line(size = 1.2) +
   theme_minimal() +
-  labs(title = "International Attention Share over Time", y = "Share of Coverage")
+  labs(title = "International Attention Share over Time", y = "Share of Entities")
 
 ```
 
 ### 3. Identify Top Actors
 
-Who drove the coverage during a specific crisis?
+Who drove the coverage during a specific time period?
 
 ```r
 top_actors <- top_items_per_period(
@@ -133,7 +131,7 @@ doc_matrix <- article_level_matrix(
 
 ## 🤝 Relation to NEClass
 
-This package is the analytical companion to **[NEClass](https://www.google.com/search?q=https://github.com/Piece-Of-Schmidt/NEClass)**.
+This package is the analytical companion to **[NEClass](https://github.com/Piece-Of-Schmidt/NEClass)**.
 
 * **Use NEClass (Python)** to extract entities from text and classify them (e.g., "BVB" -> "Germany").
 * **Use NeclassFlows (R)** to make sense of that data, create time-series plots, and run statistical models.
@@ -142,10 +140,6 @@ This separation of concerns allows you to run computationally expensive classifi
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
 ## 🖊 Citation
 
 If you use this package in your research, please cite:
@@ -153,7 +147,7 @@ If you use this package in your research, please cite:
 ```bibtex
 @article{schmidt2026neclass,
   title={NEClass: A Lightweight LLM Pipeline for Context-Dependent Named Entity Classification},
-  author={Schmidt, Tobias and Hornig, Nico},
+  author={Schmidt, Tobias},
   journal={Draft Version / TU Dortmund University},
   year={2026}
 }

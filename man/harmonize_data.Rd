@@ -36,8 +36,7 @@ of aliases or patterns to match (e.g., \code{list("Benelux" = c("Belgium", "Luxe
 }
 \value{
 A data frame with the added or updated column \code{out_col}.
-Values not matched in \code{maps} retain their original value from the \code{label} column
-(or \code{along} column if used as fallback).
+Values not matched in \code{maps} retain their original value from the \code{along} column.
 }
 \description{
 Harmonizes inconsistent labels or entities by mapping aliases to a target value.

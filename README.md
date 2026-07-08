@@ -61,20 +61,23 @@ clean_data <- harmonize_data(
 Calculate the monthly share of attention for specific target countries.
 
 ```r
-# Calculate monthly visibility of USA and EU
+# Calculate monthly visibility of the Maghreb and Benelux regions
 flows <- summarize_flows(
   clean_data,
   margin = "entities",               # Calculate share based on total entities
   targets = c("Maghreb", "Benelux"), # only consider entities with specific labels
   label_col = "clean_label",
-  date_unit = "month"
+  date_unit = "month",
+  melt = TRUE                        # long format, convenient for plotting
 )
 
 # Visualize with ggplot2
 library(ggplot2)
 
-ggplot(flows, aes(x = date, y = share, color = clean_label)) +
-  geom_line(size = 1.2) +
+flows |>
+  filter(startsWith(metric, "share")) |>
+  ggplot(aes(x = date, y = value, color = metric)) +
+  geom_line(linewidth = 1.2) +
   theme_minimal() +
   labs(title = "International Attention Share over Time", y = "Share of Entities")
 
@@ -88,7 +91,7 @@ Who drove the coverage during a specific time period?
 top_actors <- top_items_per_period(
   clean_data,
   item = "word",                 # We want to find specific entities (e.g., "Bart De Wever")
-  label_of_interest = "Benelux", # Only look at entities classified as "Belgium", "Netherlands" or "Luxembourg
+  label_of_interest = "Benelux", # Only look at entities classified as "Belgium", "Netherlands" or "Luxembourg"
   k = 5,                         # Top 5 per month
   unit = "month",
   label_col = "clean_label"
@@ -110,8 +113,8 @@ doc_matrix <- article_level_matrix(
 )
 
 # Result:
-# doc_id | n_Maghreb | n_Benelux | n_China ...
-# 1024   |     2     |     0     |    1    ...
+# doc_id | Maghreb | Benelux | China | ... | Maghreb_share | Benelux_share | ...
+# 1024   |    2    |    0    |   1   | ... |      0.5      |       0       | ...
 
 ```
 

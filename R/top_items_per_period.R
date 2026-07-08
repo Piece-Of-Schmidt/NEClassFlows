@@ -11,7 +11,8 @@
 #' @param include_share If TRUE, calculates the share of the item within its period/group.
 #' @param ties How to handle ties: "keep" (include all tied items) or "first" (strict limit to k).
 #' @return A tibble with columns: `period`, (any columns in `by`), `item`, `n`, (optional `share`), `rank`.
-#' @import dplyr tidyr lubridate rlang stringr
+#' @import dplyr lubridate rlang
+#' @importFrom utils head
 #' @export
 top_items_per_period <- function(df,
                                  item  = "label",
@@ -38,7 +39,7 @@ top_items_per_period <- function(df,
   # Create floor dates
   df <- dplyr::mutate(df, period = lubridate::floor_date(!!date_sym, unit = unit))
   
-  # Grouping: period + optionale 'by'
+  # Grouping: period + optional 'by'
   grp_base <- c("period", by %||% character())
   
   # Count: n per (period, by..., item)
@@ -46,7 +47,7 @@ top_items_per_period <- function(df,
     dplyr::group_by(dplyr::across(dplyr::all_of(c(grp_base, item)))) |>
     dplyr::summarise(n = dplyr::n(), .groups = "drop_last")
   
-  # In total per (period, by...) if share
+  # Totals per (period, by...) if share is requested
   if (isTRUE(include_share)) {
     totals <- counts |>
       dplyr::summarise(n_total = sum(n, na.rm = TRUE), .groups = "drop")
@@ -54,7 +55,7 @@ top_items_per_period <- function(df,
       dplyr::mutate(share = ifelse(n_total > 0, n / n_total, NA_real_))
   }
   
-  # ank within each (period, by...)
+  # Rank within each (period, by...)
   rank_fun <- function(d) {
     d <- d[order(d$n, decreasing = TRUE), , drop = FALSE]
     if (ties == "first") {
@@ -79,7 +80,3 @@ top_items_per_period <- function(df,
   
   out
 }
-
-# top_items_per_period(welt_sub, item="word")
-# top_items_per_period(welt_sub, item="label")
-# top_items_per_period(welt_sub, item="clean_label") # falls zuvor erzeugt

@@ -34,14 +34,14 @@ summarize_flows(
 
 \item{date_unit}{Floor unit (e.g., "month")}
 
-\item{recalculate_population_after_selection}{If TRUE (entities):
-shares werden innerhalb der ausgewählten targets normiert; sonst ggü. allen Labels}
+\item{recalculate_population_after_selection}{If TRUE (entities margin only):
+shares are computed relative to the selected targets; otherwise relative to all labels}
 
-\item{melt}{If TRUE: long output}
+\item{melt}{If TRUE: long output (entities: metric/value columns; docs: target/value columns)}
 }
 \value{
 tibble. For entities: date, nEntities, n\if{html}{\out{<target>}}, share\if{html}{\out{<target>}}.
-For docs:     date, nArticles, n\if{html}{\out{<target>}}.
+For docs:     date, nArticles, n\if{html}{\out{<target>}}, share\if{html}{\out{<target>}}.
 }
 \description{
 Summarize flows by month at entity- or document-margin

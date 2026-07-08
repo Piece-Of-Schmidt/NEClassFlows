@@ -142,7 +142,7 @@ This package is the analytical companion to **[NEClass](https://github.com/Piece
 This separation of concerns allows you to run computationally expensive classification on a GPU server (or Colab) while performing exploratory analysis locally in R Studio.
 
 ---
-<!--
+
 ## 🖊 Citation
 
 `neclassflows` is part of the NEClass methodological framework. Please cite the main paper:
@@ -151,9 +151,9 @@ This separation of concerns allows you to run computationally expensive classifi
 @article{schmidt2026neclass,
   title={NEClass: A Lightweight LLM Pipeline for Context-Dependent Named Entity Classification},
   author={Schmidt, Tobias},
-  journal={Draft Version / TU Dortmund University},
+  journal={Communication Methods and Measures},
+  note={In press},
   year={2026}
 }
 
 ```
--->

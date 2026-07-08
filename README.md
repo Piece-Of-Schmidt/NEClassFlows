@@ -149,7 +149,7 @@ This separation of concerns allows you to run computationally expensive classifi
 
 ```bibtex
 @article{schmidt2026neclass,
-  title={NEClass: A Lightweight LLM Pipeline for Context-Dependent Named Entity Classification},
+  title={NEClass: A Lightweight LLM Pipeline for Measuring Foreign News Coverage},
   author={Schmidt, Tobias},
   journal={Communication Methods and Measures},
   note={In press},

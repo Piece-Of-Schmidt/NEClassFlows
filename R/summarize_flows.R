@@ -8,12 +8,12 @@
 #' @param label_col  Label column name (e.g., "label" or "clean_label")
 #' @param doc_threshold Share threshold for doc hits (only for margin="docs")
 #' @param date_unit  Floor unit (e.g., "month")
-#' @param recalculate_population_after_selection If TRUE (entities):
-#'        shares werden innerhalb der ausgewählten targets normiert; sonst ggü. allen Labels
-#' @param melt       If TRUE: long output
+#' @param recalculate_population_after_selection If TRUE (entities margin only):
+#'        shares are computed relative to the selected targets; otherwise relative to all labels
+#' @param melt       If TRUE: long output (entities: metric/value columns; docs: target/value columns)
 #' @return tibble. For entities: date, nEntities, n<target>, share<target>.
-#'         For docs:     date, nArticles, n<target>.
-#' @import dplyr tidyr lubridate rlang stringr
+#'         For docs:     date, nArticles, n<target>, share<target>.
+#' @import dplyr tidyr lubridate rlang
 #' @export
 summarize_flows <- function(df,
                             targets,
@@ -42,7 +42,7 @@ summarize_flows <- function(df,
       dplyr::mutate(.period = lubridate::floor_date(!!date_sym, unit = date_unit)) |>
       dplyr::count(.period, !!lab_sym, name = "n")
     
-    # Total length per eriod for normalizing shares:
+    # Total counts per period for normalizing shares:
     if (recalculate_population_after_selection) {
       base_for_share <- counts_all |>
         dplyr::filter(!!lab_sym %in% targets) |>
@@ -66,9 +66,15 @@ summarize_flows <- function(df,
     
     # Shares within selected population
     wide <- dplyr::left_join(base_for_share, wide_n, by = ".period")
-    
+
+    # Targets without any occurrence count as 0
+    missing <- setdiff(paste0("n", targets), names(wide))
+    if (length(missing)) wide[missing] <- 0L
+
+    n_cols <- setdiff(grep("^n", names(wide), value = TRUE), "n_total")
+    wide <- dplyr::mutate(wide, dplyr::across(dplyr::all_of(n_cols), ~ tidyr::replace_na(.x, 0L)))
+
     # Calculate share column (n<label> / n_total), NA if n_total=0
-    n_cols <- grep("^n(?!total$)", names(wide), perl = TRUE, value = TRUE)
     for (nc in n_cols) {
       wide[[sub("^n", "share", nc)]] <- ifelse(wide$n_total > 0, wide[[nc]] / wide$n_total, NA_real_)
     }
@@ -85,7 +91,7 @@ summarize_flows <- function(df,
   }
 
  # ===== margin == "docs" =====
-  # Counts per Article × Lable
+  # Counts per article x label
   counts <- df |>
     dplyr::group_by(!!id_sym, !!lab_sym) |>
     dplyr::summarise(n = dplyr::n(), .groups = "drop")
@@ -120,8 +126,14 @@ summarize_flows <- function(df,
   
   out <- dplyr::left_join(n_articles, wide_hits, by = ".period") |>
     dplyr::rename(date = .period)
-  
-  n_cols <- grep("^n(?!Articles$)", names(out), perl = TRUE, value = TRUE)
+
+  # Targets without any hit count as 0
+  missing <- setdiff(paste0("n", targets), names(out))
+  if (length(missing)) out[missing] <- 0L
+
+  n_cols <- setdiff(grep("^n", names(out), value = TRUE), "nArticles")
+  out <- dplyr::mutate(out, dplyr::across(dplyr::all_of(n_cols), ~ tidyr::replace_na(.x, 0L)))
+
   for (nc in n_cols) {
     out[[sub("^n", "share", nc)]] <- ifelse(out$nArticles > 0,
                                             out[[nc]] / out$nArticles,

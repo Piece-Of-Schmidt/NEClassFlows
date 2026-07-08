@@ -13,11 +13,9 @@
 #'        "last_wins" (the last match in `maps` overwrites previous ones) or 
 #'        "first_wins" (the first match is kept).
 #' 
-#' @return A data frame with the added or updated column `out_col`. 
-#'         Values not matched in `maps` retain their original value from the `label` column 
-#'         (or `along` column if used as fallback).
-#' 
-#' @import dplyr tidyr lubridate rlang stringr
+#' @return A data frame with the added or updated column `out_col`.
+#'         Values not matched in `maps` retain their original value from the `along` column.
+#'
 #' @importFrom stats setNames
 #' @export
 harmonize_data <- function(df,
@@ -34,9 +32,7 @@ harmonize_data <- function(df,
   
   df[[out_col]] <- target_vec <- df[[along]]
   if (!length(maps)) { return(df) }
-    
-  already_set <- rep(FALSE, nrow(df))
-  
+
   if (!regex) {
     # Exact match path (fast)
     if (case_insensitive) {
@@ -47,23 +43,19 @@ harmonize_data <- function(df,
     all_aliases <- unlist(maps, use.names = FALSE)
     all_targets <- rep(names(maps), lengths(maps))
     if (case_insensitive) all_aliases <- tolower(all_aliases)
-    
-    lookup <- setNames(all_targets, all_aliases)
-    if (conflict == "first_wins") {
-      # Remove duplicates from lookup, keeping the first occurrence
-      keep <- !duplicated(all_aliases)
-      lookup <- setNames(all_targets[keep], all_aliases[keep])
-    }
-    
+
+    # Resolve duplicated aliases according to conflict strategy
+    keep <- !duplicated(all_aliases, fromLast = (conflict == "last_wins"))
+    lookup <- setNames(all_targets[keep], all_aliases[keep])
+
     hit <- match(target_vec_fold, names(lookup), nomatch = 0L)
     if (any(hit > 0L)) {
       idx <- which(hit > 0L)
-      if (conflict == "first_wins") idx <- idx[!already_set[idx]] # Only overwrite if not already set
       df[[out_col]][idx] <- lookup[ hit[idx] ]
-      already_set[idx] <- TRUE
     }
   } else {
     # Regex path
+    already_set <- rep(FALSE, nrow(df))
     for (tgt in names(maps)) {
       pats <- maps[[tgt]]
       if (!length(pats)) next
